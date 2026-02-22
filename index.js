@@ -124,7 +124,7 @@ const CONFIG = {
     'çine','çiçekdağı','çiğli','çorlu','çubuk','çukurca','çukurova','çumra','çüngüş','çınar',
     'çınarcık','ödemiş','ömerli','özalp','özvatan','ümraniye','ünye','ürgüp','üsküdar','üzümlü',
     'şabanözü','şahinbey','şaphane','şarkikaraağaç','şarköy','şarkışla','şavşat','şebinkarahisar','şefaatli','şehitkamil',
-    'şehzadeler','şemdinli','şenkaya','şenpazar','koçhisar','şile','şiran','şirvan','şişli','şuhut','temelli'
+    'şehzadeler','şemdinli','şenkaya','şenpazar','şereflikoçhisar','şile','şiran','şirvan','şişli','şuhut',
   ],
 };
 
@@ -246,6 +246,43 @@ function formatResults(ilanlar, searchCities) {
     const text = highlightCities(ilan.text.trim(), searchCities);
     return `🚛 *İlan ${i + 1}* — _${ilan.chatName}_\n${text}\n⏱ _${timeAgo(ilan.timestamp)}_`;
   }).join('\n\n' + '─'.repeat(30) + '\n\n');
+}
+
+// ── Samsun Bildirim Modülü ────────────────────
+// Mevcut işleyişe hiç dokunmaz, sadece Samsun ilanı gelince kendine mesaj atar
+
+const SAMSUN_ILCELERI = [
+  'samsun','atakum','canik','ilkadım','tekkeköy','bafra','çarşamba','terme',
+  'alaçam','asarcık','ayvacık','havza','kavak','ladik','ondokuzmayıs',
+  'salıpazarı','vezirköprü','yakakent'
+];
+
+function isSamsunIlani(text) {
+  const norm = normalize(text);
+  return SAMSUN_ILCELERI.some(ilce => {
+    const normIlce = normalize(ilce);
+    return (' ' + norm + ' ').includes(' ' + normIlce + ' ');
+  });
+}
+
+async function samsunBildirimiGonder(ilan) {
+  try {
+    const myNumber = client.info.wid._serialized;
+    const chat = await client.getChatById(myNumber);
+
+    // Template literals (backtick) kullanarak çok satırlı string oluşturma
+    const mesaj = `🔔 *YENİ SAMSUN İLANI*
+──────────────────────
+📍 *Grup:* ${ilan.chatName}
+⏱ ${timeAgo(ilan.timestamp)}
+
+${ilan.text.trim()}`;
+
+    await chat.sendMessage(mesaj);
+    console.log('🔔 Samsun bildirimi gönderildi.');
+  } catch (err) {
+    console.warn('⚠️ Samsun bildirimi gönderilemedi:', err.message);
+  }
 }
 
 // ── İlan Deposu ────────────────────────────────
@@ -401,6 +438,15 @@ client.on('message_create', async (msg) => {
         timestamp: msg.timestamp * 1000,
       });
       console.log(`💾 ${chat.name} | ${cities.join(', ')} | toplam: ${store.size()}`);
+
+      // Samsun bildirimi — mevcut işleyişe dokunmaz
+      if (isSamsunIlani(body)) {
+        samsunBildirimiGonder({
+          text: body,
+          chatName: chat.name || 'Grup',
+          timestamp: msg.timestamp * 1000,
+        });
+      }
     }
   } catch (e) {
     console.error('❌', e.message);
