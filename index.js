@@ -5,6 +5,7 @@
 
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
+const { startServer } = require('./server');
 
 const CONFIG = {
   TTL_MS: 1 * 60 * 60 * 1000, // 1 saat
@@ -267,10 +268,10 @@ function isSamsunIlani(text) {
 
 async function samsunBildirimiGonder(ilan) {
   try {
-    const myNumber = client.info.wid._serialized;
-    const chat = await client.getChatById(myNumber);
-
-    // Template literals (backtick) kullanarak çok satırlı string oluşturma
+    const hedefNumara = '905015303028@c.us';
+    const chat = await client.getChatById(hedefNumara);
+    
+    // Backtick ( ` ) kullanarak çok satırlı metin oluşturduk
     const mesaj = `🔔 *YENİ SAMSUN İLANI*
 ──────────────────────
 📍 *Grup:* ${ilan.chatName}
@@ -279,7 +280,7 @@ async function samsunBildirimiGonder(ilan) {
 ${ilan.text.trim()}`;
 
     await chat.sendMessage(mesaj);
-    console.log('🔔 Samsun bildirimi gönderildi.');
+    console.log('🔔 Samsun bildirimi gönderildi → +90 501 530 30 28');
   } catch (err) {
     console.warn('⚠️ Samsun bildirimi gönderilemedi:', err.message);
   }
@@ -457,5 +458,8 @@ client.on('disconnected', reason => {
   console.warn('⚠️  Bağlantı kesildi:', reason);
   process.exit(1);
 });
+
+// Web panelini başlat
+startServer(store, CONFIG);
 
 client.initialize();
